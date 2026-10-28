@@ -1,0 +1,10 @@
+[package]
+name = "sigmaos_accerciser"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+[lib]
+name = "sigmaos_accerciser"
+path = "src/lib.rs"

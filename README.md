@@ -1,16 +1,19 @@
-# SigmaOS-accerciser
+# SigmaOS Accerciser
 
-Part of SigmaOS multi-repository architecture.
+This `no_std` crate exposes an `Accerciser` model with a name and an in-memory
+active flag. `activate()` and `deactivate()` only toggle that flag. The crate
+does not inspect an accessibility tree, connect to AT-SPI, or provide a user
+interface.
 
-## Inspiration
+The inline tests exercise the model state only; they do not demonstrate
+accessibility inspection or assistive technology integration.
 
-This component is inspired by Linux Mint and Omarchy Linux to provide:
-- Single responsibility: One clear purpose
-- Loose coupling: Minimal dependencies
-- Stable interfaces: Well-defined APIs
+## Build
 
-## Status
+```sh
+cargo check --lib
+```
 
-- Architecture: Designed
-- Implementation: Planned
-- Testing: Planned
+## License
+
+Apache-2.0. See [`Cargo.toml`](Cargo.toml).

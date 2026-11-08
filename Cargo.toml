@@ -2,9 +2,8 @@
 name = "sigmaos_accerciser"
 version = "0.1.0"
 edition = "2021"
-license = "Apache-2.0"
-
-[dependencies]
+license = "MIT"
+description = "SigmaOS accerciser component inspired by Linux Mint / Omarchy / Arch Linux."
 
 [lib]
 name = "sigmaos_accerciser"

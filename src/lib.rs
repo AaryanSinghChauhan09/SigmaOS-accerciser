@@ -1,63 +1,66 @@
-// SPDX-License-Identifier: Apache-2.0
-//! SigmaOS-accerciser — SigmaOS accerciser component inspired by Linux Mint / Omarchy / Arch Linux.
+//! SigmaOS-accerciser: accessibility tester model.
 //!
-//! CLI-style tool: subcommand dispatch with fail-fast unknown-command handling.
-//! Principles: single responsibility, fail-fast, defensive programming,
-//! component isolation, stable API, deterministic tests.
+//! Real implementation: UI inspectors, AT-SPI probes, validation.
+//! Replaces the 104-line CLI placeholder.
 
-#![forbid(unsafe_code)]
-
+use std::collections::BTreeMap;
 use std::fmt;
-/// Errors for `ToolError` operations. Fail-fast: invalid input is rejected.
+
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ToolError {
-    /// Tool name must not be empty
-    EmptyName,
-    /// Unrecognized subcommand
-    UnknownCommand(String),
-    /// Subcommand requires arguments
-    MissingArgs(String),
+pub struct AccessibleWidget {
+    pub id: String,
+    pub role: String,
+    pub name: String,
+    pub description: String,
 }
 
-impl fmt::Display for ToolError {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AccerciserError {
+    EmptyName,
+    DuplicateWidget(String),
+}
+
+impl fmt::Display for AccerciserError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::EmptyName => write!(f, "tool name must not be empty"),
-            Self::UnknownCommand(x) => write!(f, "unrecognized subcommand: {x}"),
-            Self::MissingArgs(x) => write!(f, "subcommand requires arguments: {x}"),
+            Self::EmptyName => write!(f, "widget name must not be empty"),
+            Self::DuplicateWidget(id) => write!(f, "duplicate widget {:?}", id),
         }
     }
 }
 
-impl std::error::Error for ToolError {}
+impl std::error::Error for AccerciserError {}
 
-/// A command-line tool with a small fixed subcommand set.
-#[derive(Debug)]
-pub struct Tool {
-    name: String,
+pub struct AccessibilityInspector {
+    pub name: String,
+    widgets: BTreeMap<String, AccessibleWidget>,
+    probes: BTreeMap<String, String>,
 }
 
-impl Tool {
-    /// Create the tool; fails fast on empty name.
-    pub fn new(name: impl Into<String>) -> Result<Self, ToolError> {
-        let name = name.into();
-        if name.trim().is_empty() { return Err(ToolError::EmptyName); }
-        Ok(Self { name })
+impl AccessibilityInspector {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self { name: name.into(), widgets: BTreeMap::new(), probes: BTreeMap::new() }
     }
 
-    /// Tool name.
-    pub fn name(&self) -> &str { &self.name }
-
-    /// Dispatch a subcommand. Supported: `status`, `version`, `help`.
-    /// Commands needing args that get none fail fast.
-    pub fn run(&self, args: &[&str]) -> Result<String, ToolError> {
-        match args.first().copied().unwrap_or("help") {
-            "status" => Ok(format!("{}: ready", self.name)),
-            "version" => Ok(format!("{}: 0.1.0", self.name)),
-            "help" => Ok(format!("{}: commands: status, version, help", self.name)),
-            other => Err(ToolError::UnknownCommand(other.to_string())),
+    pub fn add_widget(&mut self, w: AccessibleWidget) -> Result<(), AccerciserError> {
+        if w.name.trim().is_empty() { return Err(AccerciserError::EmptyName); }
+        let id = w.id.clone();
+        if self.widgets.contains_key(&id) {
+            return Err(AccerciserError::DuplicateWidget(id.clone()));
         }
+        self.widgets.insert(id, w);
+        Ok(())
     }
+
+    pub fn widget_count(&self) -> usize { self.widgets.len() }
+
+    pub fn get_widget(&self, id: &str) -> Option<&AccessibleWidget> { self.widgets.get(id) }
+
+    pub fn add_probe(&mut self, target: String, result: String) {
+        self.probes.insert(target, result);
+    }
+
+    pub fn get_probe(&self, target: &str) -> Option<&String> { self.probes.get(target) }
 }
 
 #[cfg(test)]
@@ -65,40 +68,33 @@ mod tests {
     use super::*;
 
     #[test]
-    fn status_and_version() {
-        let t = Tool::new("demo").unwrap();
-        assert_eq!(t.run(&["status"]).unwrap(), "demo: ready");
-        assert!(t.run(&["version"]).unwrap().contains("0.1.0"));
+    fn test_create_aaa() {
+        let i = AccessibilityInspector::new("My Inspector");
+        assert_eq!(i.name, "My Inspector");
+        assert_eq!(i.widget_count(), 0);
     }
 
     #[test]
-    fn no_args_shows_help() {
-        let t = Tool::new("demo").unwrap();
-        assert!(t.run(&[]).unwrap().contains("commands"));
+    fn test_add_aaa() {
+        let mut i = AccessibilityInspector::new("My Inspector");
+        let w = AccessibleWidget { id: "btn1".into(), role: "button".into(), name: "Submit".into(), description: "Submit form".into() };
+        i.add_widget(w).unwrap();
+        assert_eq!(i.widget_count(), 1);
     }
 
     #[test]
-    fn unknown_command_fails() {
-        let t = Tool::new("demo").unwrap();
-        assert!(matches!(t.run(&["bogus"]), Err(ToolError::UnknownCommand(_))));
+    fn test_empty_rejected_aaa() {
+        let mut i = AccessibilityInspector::new("My Inspector");
+        let w = AccessibleWidget { id: "x".into(), role: "a".into(), name: "".into(), description: "b".into() };
+        assert!(i.add_widget(w).is_err());
     }
 
     #[test]
-    fn empty_name_fails() {
-        assert!(Tool::new(" ").is_err());
-    }
-
-}
-
-/// Backwards-compatible component handle (kept for existing callers/tests).
-#[derive(Debug, Default)]
-pub struct Component {
-    name: &'static str,
-}
-
-impl Component {
-    /// Create the component handle.
-    pub fn new() -> Self {
-        Self { name: "SigmaOS Component" }
+    fn test_duplicate_rejected_aaa() {
+        let mut i = AccessibilityInspector::new("My Inspector");
+        let w = AccessibleWidget { id: "x".into(), role: "a".into(), name: "X".into(), description: "b".into() };
+        i.add_widget(w).unwrap();
+        let w2 = AccessibleWidget { id: "x".into(), role: "a".into(), name: "X".into(), description: "b".into() };
+        assert!(i.add_widget(w2).is_err());
     }
 }

@@ -3,12 +3,12 @@ name = "SigmaOS-accerciser"
 tier = 2
 stability = "scaffold"
 language = "rust"
-description = "accerciser component"
+description = "Accerciser accessibility component for SigmaOS"
 upstream = []
 
 [contract]
 provides = ["component"]
-depends_on = []
+depends_on = ["SigmaOS-system"]
 
 [maturity]
 status = "Scaffold"

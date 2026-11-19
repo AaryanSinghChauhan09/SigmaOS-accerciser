@@ -1,10 +1,15 @@
 [package]
-name = "sigmaos_accerciser"
+name = "SigmaOS-accerciser"
 version = "0.1.0"
 edition = "2021"
-license = "MIT"
-description = "SigmaOS accerciser component inspired by Linux Mint / Omarchy / Arch Linux."
+license = "Apache-2.0"
+description = "SigmaOS sigmaos_accerciser component"
 
 [lib]
 name = "sigmaos_accerciser"
 path = "src/lib.rs"
+
+[dependencies]
+thiserror = "1"
+
+[dev-dependencies]
